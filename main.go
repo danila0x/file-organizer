@@ -19,6 +19,7 @@ func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
 	info, err := os.Stat(sourceDir)
 	if err != nil {
 		fmt.Println("Ошибка:", err)
+		return nil, err
 	}
 	if info.IsDir() == false {
 		return nil, fmt.Errorf("its not a directory")
