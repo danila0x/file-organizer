@@ -1,6 +1,35 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
+
+type FileOrganizer struct {
+	sourceDir      string
+	rulesMap       map[string]string
+	processedFiles int
+	logFile        *os.File
+}
+
+func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
+	if sourceDir == "" {
+		return nil, fmt.Errorf("sourceDir is empty")
+	}
+	info, err := os.Stat(sourceDir)
+	if err != nil {
+		fmt.Println("Ошибка:", err)
+	}
+	if info.IsDir() == false {
+		return nil, fmt.Errorf("its not a directory")
+	}
+	return &FileOrganizer{
+		sourceDir:      sourceDir,
+		rulesMap:       map[string]string{},
+		processedFiles: 0,
+		logFile:        nil,
+	}, nil
+}
 
 func main() {
 	DefaultRules := map[string]string{
