@@ -118,13 +118,14 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 	if err != nil {
 		//fmt.Println("Ошибка создания папки:", err)
 		fo.logError("Ошибка создания папки")
+		return fmt.Errorf("Ошибка создания папки")
 	}
 	fmt.Println("Папка успешно создана")
 	newFilePath := filepath.Join(filePath, fileName)
 	if _, err := os.Stat(newFilePath); err == nil {
 		ext := filepath.Ext(fileName)
 		base := strings.TrimSuffix(fileName, ext)
-		timestamp := time.Now().Format("20060102_150405")
+		timestamp := time.Now().Format("2006-01-02_15-04-05")
 		newFileName := base + "_" + timestamp + ext
 		targetPath := filepath.Join(filePath, newFileName)
 		if renameErr := os.Rename(sourcePath, targetPath); renameErr != nil {
