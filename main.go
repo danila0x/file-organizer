@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func main() {
-	defaultRules := map[string]string{
+	DefaultRules := map[string]string{
 		".jpg":  "Images",
 		".jpeg": "Images",
 		".png":  "Images",
@@ -19,7 +19,7 @@ func main() {
 		".rar":  "Archives",
 	}
 
-	for key, value := range defaultRules {
+	for key, value := range DefaultRules {
 		fmt.Println(key, value)
 	}
 }
