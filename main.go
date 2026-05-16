@@ -116,7 +116,8 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 	filePath := filepath.Join(fo.sourceDir, targetDir)
 	err := os.MkdirAll(filePath, 0755)
 	if err != nil {
-		fmt.Println("Ошибка создания папки:", err)
+		//fmt.Println("Ошибка создания папки:", err)
+		fo.logError("Ошибка создания папки")
 	}
 	fmt.Println("Папка успешно создана")
 	newFilePath := filepath.Join(filePath, fileName)
