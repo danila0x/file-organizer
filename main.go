@@ -140,6 +140,9 @@ func (fo *FileOrganizer) Organize() error {
 			fo.logError(fmt.Sprintf("Ошибка доступа к %s: %v", path, err))
 			return nil
 		}
+		if filepath.Dir(path) != fo.sourceDir {
+			return nil
+		}
 		if d.IsDir() {
 			return nil
 		}
