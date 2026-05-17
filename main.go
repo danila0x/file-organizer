@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,45 +38,29 @@ func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
 }
 
 func main() {
-	DefaultRules := map[string]string{
-		".jpg":  "Images",
-		".jpeg": "Images",
-		".png":  "Images",
-		".pdf":  "Documents",
-		".doc":  "Documents",
-		".docx": "Documents",
-		".txt":  "Documents",
-		".mp3":  "Music",
-		".wav":  "Music",
-		".mp4":  "Video",
-		".avi":  "Video",
-		".zip":  "Archives",
-		".rar":  "Archives",
-	}
-
-	for key, value := range DefaultRules {
-		fmt.Println(key, value)
-	}
-
-	org, err := NewFileOrganizer(".")
+	targetPath := "D:\\practice_file_organizer"
+	org, err := NewFileOrganizer(targetPath)
 	if err != nil {
-		fmt.Println(err)
-	}
-	defer org.Close()
-	if err := org.initLog(); err != nil {
-		fmt.Println("Ошибка инициализации лога:", err)
+		fmt.Println("Ошибка:", err)
 		return
 	}
+	defer org.Close()
 
-	// org.logSuccess("Файл \"report.pdf\" перемещён в директорию \"Documents\"")
-	// org.logError("Невозможно переместить файл \"data.tmp\" - файл занят")
-	// if err := org.moveFile(); err != nil {
+	org.rulesMap = map[string]string{
+		".jpg": "Images", ".jpeg": "Images", ".png": "Images",
+		".pdf": "Documents", ".doc": "Documents", ".docx": "Documents", ".txt": "Documents",
+		".mp3": "Music", ".wav": "Music",
+		".mp4": "Video", ".avi": "Video",
+		".zip": "Archives", ".rar": "Archives",
+	}
 
-	// }
+	if err := org.Organize(); err != nil {
+		fmt.Println("Ошибка:", err)
+	}
 }
 
 func (fo *FileOrganizer) initLog() error {
-	logPath := filepath.Join(fo.sourceDir, "organizer.log")
+	logPath := "organizer.log"
 	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("Не удалось открыть файл лога %w", err)
@@ -109,14 +94,13 @@ func (fo *FileOrganizer) Close() error {
 }
 
 func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
-	fmt.Printf("sourcePath: %s, targetDir: %s", sourcePath, targetDir)
+	fmt.Printf("sourcePath: %s, targetDir: %s\n", sourcePath, targetDir)
 	fileName := filepath.Base(sourcePath)
 	fullPath := filepath.Join(fo.sourceDir, targetDir, fileName)
-	fmt.Printf("filename: %s, fullpath: %s", fileName, fullPath)
+	fmt.Printf("filename: %s, fullpath: %s\n", fileName, fullPath)
 	filePath := filepath.Join(fo.sourceDir, targetDir)
 	err := os.MkdirAll(filePath, 0755)
 	if err != nil {
-		//fmt.Println("Ошибка создания папки:", err)
 		fo.logError("Ошибка создания папки")
 		return fmt.Errorf("Ошибка создания папки")
 	}
@@ -144,5 +128,34 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 		fo.logError(fmt.Sprintf("Ошибка при проверке файла %s: %v", fileName, err))
 		return fmt.Errorf("ошибка проверки файла: %w", err)
 	}
+	return nil
+}
+
+func (fo *FileOrganizer) Organize() error {
+	if err := fo.initLog(); err != nil {
+		return fmt.Errorf("ошибка инициализации лога: %w", err)
+	}
+	err := filepath.WalkDir(fo.sourceDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			fo.logError(fmt.Sprintf("Ошибка доступа к %s: %v", path, err))
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if d.Name() == "organizer.log" {
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(path))
+		targetDir := fo.rulesMap[ext]
+		if moveErr := fo.moveFile(path, targetDir); moveErr != nil {
+			fo.logError(fmt.Sprintf("Не удалось переместить %s: %v", path, moveErr))
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("ошибка при обходе директории: %w", err)
+	}
+
 	return nil
 }
