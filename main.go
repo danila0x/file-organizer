@@ -147,7 +147,10 @@ func (fo *FileOrganizer) Organize() error {
 			return nil
 		}
 		ext := strings.ToLower(filepath.Ext(path))
-		targetDir := fo.rulesMap[ext]
+		targetDir, exists := fo.rulesMap[ext]
+		if !exists {
+			return nil
+		}
 		if moveErr := fo.moveFile(path, targetDir); moveErr != nil {
 			fo.logError(fmt.Sprintf("Не удалось переместить %s: %v", path, moveErr))
 		}
