@@ -10,11 +10,32 @@ import (
 	"time"
 )
 
+type FileStats struct {
+	CountFiles    int
+	TotalFileSize int64
+}
+
+func (fs *FileStats) String() string {
+	var sizeStr string
+	size := fs.TotalFileSize
+	switch {
+	case size < 1024:
+		sizeStr = fmt.Sprintf("%d B", size)
+	case size < 1024*1024:
+		sizeStr = fmt.Sprintf("%.2f KB", float64(size)/1024)
+	default:
+		sizeStr = fmt.Sprintf("%.2f MB", float64(size)/(1024*1024))
+	}
+	return fmt.Sprintf("\tФайлов: %d, Размер: %s", fs.CountFiles, sizeStr)
+}
+
 type FileOrganizer struct {
 	sourceDir      string
 	rulesMap       map[string]string
 	processedFiles int
 	logFile        *os.File
+	statistics     map[string]*FileStats
+	totalSize      int64
 }
 
 func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
@@ -34,6 +55,8 @@ func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
 		rulesMap:       map[string]string{},
 		processedFiles: 0,
 		logFile:        nil,
+		statistics:     make(map[string]*FileStats),
+		totalSize:      0,
 	}, nil
 }
 
@@ -57,6 +80,8 @@ func main() {
 	if err := org.Organize(); err != nil {
 		fmt.Println("Ошибка:", err)
 	}
+
+	fmt.Println(org.generateReport())
 }
 
 func (fo *FileOrganizer) initLog() error {
@@ -105,6 +130,14 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 		return fmt.Errorf("Ошибка создания папки")
 	}
 	fmt.Println("Папка успешно создана")
+
+	// Размер файла до перемещения
+	fileInfo, err := os.Stat(sourcePath)
+	if err != nil {
+		return fmt.Errorf("Ошибка получения размера: %w", err)
+	}
+	fileSize := fileInfo.Size()
+
 	newFilePath := filepath.Join(filePath, fileName)
 	if _, err := os.Stat(newFilePath); err == nil {
 		ext := filepath.Ext(fileName)
@@ -116,6 +149,15 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 			fo.logError(fmt.Sprintf("Не удалось переместить файл %s: %v", fileName, renameErr))
 			return fmt.Errorf("ошибка перемещения файла: %w", renameErr)
 		}
+
+		if _, exists := fo.statistics[targetDir]; !exists {
+			fo.statistics[targetDir] = &FileStats{}
+		}
+		fo.statistics[targetDir].CountFiles++
+		fo.statistics[targetDir].TotalFileSize += fileSize
+		fo.totalSize += fileSize
+		fo.processedFiles++
+
 		fo.logSuccess(fmt.Sprintf("Файл %q перемещён в %q (переименован в %q)", fileName, targetDir, newFileName))
 
 	} else if os.IsNotExist(err) {
@@ -123,6 +165,15 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 			fo.logError(fmt.Sprintf("Не удалось переместить файл %s: %v", fileName, renameErr))
 			return fmt.Errorf("ошибка перемещения файла: %w", renameErr)
 		}
+
+		if _, exists := fo.statistics[targetDir]; !exists {
+			fo.statistics[targetDir] = &FileStats{}
+		}
+		fo.statistics[targetDir].CountFiles++
+		fo.statistics[targetDir].TotalFileSize += fileSize
+		fo.totalSize += fileSize
+		fo.processedFiles++
+
 		fo.logSuccess(fmt.Sprintf("Файл %q перемещён в %q", fileName, targetDir))
 	} else {
 		fo.logError(fmt.Sprintf("Ошибка при проверке файла %s: %v", fileName, err))
@@ -164,4 +215,36 @@ func (fo *FileOrganizer) Organize() error {
 	}
 
 	return nil
+}
+
+func (fo *FileOrganizer) generateReport() string {
+	fmt.Println("\n=== Отчёт о перемещении файлов  ===")
+	fmt.Println()
+	totalStr := fmt.Sprintf("Всего обработано файлов: %d\n", fo.processedFiles)
+	totalSize := fmt.Sprintf("Общий размер: %s\n\n", formatSize(fo.totalSize))
+	categoryStr := "Статистика по категориям:\n\n"
+	var finalStr string
+	for category, stats := range fo.statistics {
+		finalStr += fmt.Sprintf("%s:\n %s\n", category, stats.String())
+	}
+	return totalStr + totalSize + categoryStr + finalStr
+}
+
+func formatSize(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+
+	switch {
+	case bytes < KB:
+		return fmt.Sprintf("%d B", bytes)
+	case bytes < MB:
+		return fmt.Sprintf("%.2f KB", float64(bytes)/KB)
+	case bytes < GB:
+		return fmt.Sprintf("%.2f MB", float64(bytes)/MB)
+	default:
+		return fmt.Sprintf("%.2f GB", float64(bytes)/GB)
+	}
 }
