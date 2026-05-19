@@ -118,7 +118,7 @@ func (fo *FileOrganizer) Close() error {
 	return nil
 }
 
-func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
+func (fo *FileOrganizer) moveFile(sourcePath, targetDir string, fileSize int64) error {
 	fmt.Printf("sourcePath: %s, targetDir: %s\n", sourcePath, targetDir)
 	fileName := filepath.Base(sourcePath)
 	fullPath := filepath.Join(fo.sourceDir, targetDir, fileName)
@@ -132,11 +132,11 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string) error {
 	fmt.Println("Папка успешно создана")
 
 	// Размер файла до перемещения
-	fileInfo, err := os.Stat(sourcePath)
-	if err != nil {
-		return fmt.Errorf("Ошибка получения размера: %w", err)
-	}
-	fileSize := fileInfo.Size()
+	// fileInfo, err := os.Stat(sourcePath)
+	// if err != nil {
+	// 	return fmt.Errorf("Ошибка получения размера: %w", err)
+	// }
+	// fileSize := fileInfo.Size()
 
 	newFilePath := filepath.Join(filePath, fileName)
 	if _, err := os.Stat(newFilePath); err == nil {
@@ -187,10 +187,17 @@ func (fo *FileOrganizer) Organize() error {
 		return fmt.Errorf("ошибка инициализации лога: %w", err)
 	}
 	err := filepath.WalkDir(fo.sourceDir, func(path string, d fs.DirEntry, err error) error {
+		fileInfo, err := d.Info()
 		if err != nil {
-			fo.logError(fmt.Sprintf("Ошибка доступа к %s: %v", path, err))
+			// Не можем получить размер
+			fo.logError(fmt.Sprintf("Не удалось получить информацию о файле %s: %v", path, err))
 			return nil
 		}
+		fileSize := fileInfo.Size()
+		// if err != nil {
+		// 	fo.logError(fmt.Sprintf("Ошибка доступа к %s: %v", path, err))
+		// 	return nil
+		// }
 		if filepath.Dir(path) != fo.sourceDir {
 			return nil
 		}
@@ -205,7 +212,8 @@ func (fo *FileOrganizer) Organize() error {
 		if !exists {
 			return nil
 		}
-		if moveErr := fo.moveFile(path, targetDir); moveErr != nil {
+		// fo.moveFile(path, targetDir, fileSize)
+		if moveErr := fo.moveFile(path, targetDir, fileSize); moveErr != nil {
 			fo.logError(fmt.Sprintf("Не удалось переместить %s: %v", path, moveErr))
 		}
 		return nil
