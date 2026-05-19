@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"log"
@@ -61,8 +62,22 @@ func NewFileOrganizer(sourceDir string) (*FileOrganizer, error) {
 }
 
 func main() {
-	targetPath := "D:\\practice_file_organizer"
-	org, err := NewFileOrganizer(targetPath)
+	fmt.Println("===File organizer===")
+	fmt.Print("Введите путь к директории для организации (Enter для текущей директории):")
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	sourcePath := strings.TrimSpace(input)
+	if sourcePath == "" {
+		var err error
+		sourcePath, err = os.Getwd()
+		if err != nil {
+			fmt.Println("Ошибка получения текущей директории:", err)
+			return
+		}
+		fmt.Printf("Используется текущая директория: %s\n", sourcePath)
+
+	}
+	org, err := NewFileOrganizer(sourcePath)
 	if err != nil {
 		fmt.Println("Ошибка:", err)
 		return
@@ -82,6 +97,7 @@ func main() {
 	}
 
 	fmt.Println(org.generateReport())
+	fmt.Println("Организация завершена! Подробности в файле organizer.log")
 }
 
 func (fo *FileOrganizer) initLog() error {
@@ -130,13 +146,6 @@ func (fo *FileOrganizer) moveFile(sourcePath, targetDir string, fileSize int64) 
 		return fmt.Errorf("Ошибка создания папки")
 	}
 	fmt.Println("Папка успешно создана")
-
-	// Размер файла до перемещения
-	// fileInfo, err := os.Stat(sourcePath)
-	// if err != nil {
-	// 	return fmt.Errorf("Ошибка получения размера: %w", err)
-	// }
-	// fileSize := fileInfo.Size()
 
 	newFilePath := filepath.Join(filePath, fileName)
 	if _, err := os.Stat(newFilePath); err == nil {
@@ -194,10 +203,6 @@ func (fo *FileOrganizer) Organize() error {
 			return nil
 		}
 		fileSize := fileInfo.Size()
-		// if err != nil {
-		// 	fo.logError(fmt.Sprintf("Ошибка доступа к %s: %v", path, err))
-		// 	return nil
-		// }
 		if filepath.Dir(path) != fo.sourceDir {
 			return nil
 		}
@@ -212,7 +217,6 @@ func (fo *FileOrganizer) Organize() error {
 		if !exists {
 			return nil
 		}
-		// fo.moveFile(path, targetDir, fileSize)
 		if moveErr := fo.moveFile(path, targetDir, fileSize); moveErr != nil {
 			fo.logError(fmt.Sprintf("Не удалось переместить %s: %v", path, moveErr))
 		}
