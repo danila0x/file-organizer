@@ -11,9 +11,9 @@
 
 ## Установка
 
-git clone https://github.com/danila0x/file-organizer.git
-cd file-organizer
-go build
+1. git clone https://github.com/danila0x/file-organizer.git
+2. cd file-organizer
+3. go build
 
 ## Использование
 
