@@ -1,24 +1,14 @@
-# ПОРТ — Программа Организации Разнообразных Типов
+#A utility for automatically sorting files by type.
 
-Утилита для автоматической сортировки файлов по типам.
+## Features
 
-## Возможности
+- Automatic file sorting by extensions
+- Logging of all operations
+- Statistics report
+- Name conflict handling
 
-- Автоматическая сортировка файлов по расширениям
-- Логирование всех операций
-- Отчёт со статистикой
-- Обработка конфликтов имён
-
-## Установка
+## Installation
 
 1. git clone https://github.com/danila0x/file-organizer.git
 2. cd file-organizer
 3. go build
-
-## Использование
-
-./file-organizer
-
-## Источник
-
-Проект создан в рамках курса на платформе [Praxiscode](https://praxiscode.io)
