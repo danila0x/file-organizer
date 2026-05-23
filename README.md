@@ -1,4 +1,4 @@
-#A utility for automatically sorting files by type.
+# A utility for automatically sorting files by type.
 
 ## Features
 
